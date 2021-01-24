@@ -19,6 +19,8 @@
 #' @method mean_semivariance_optimize Optimises the portfolio using the mean-semivariance model 
 #' @method plot_assets Plots asset prices over time
 #' @method plot_value Plots the value of the assets and the portfolio
+#'
+#' @export
 portfolio = setRefClass("portfolio",
                         fields=c(
                           assets = "character",         
@@ -204,7 +206,7 @@ portfolio$methods(
                                                   expected_returns)),
                                    bvec = c(1,
                                             desired_daily_return),
-                                   meq = 1
+                                   meq = 2
                                   )$solution)
       .self$weights = temp_weights
       return(temp_weights)
@@ -218,7 +220,7 @@ portfolio$methods(
                                    bvec = c(1,
                                             desired_daily_return,
                                             rep(0, length(expected_returns))),
-                                   meq = 1,
+                                   meq = 2,
                                   )$solution)
       .self$weights = temp_weights
       return(temp_weights)
