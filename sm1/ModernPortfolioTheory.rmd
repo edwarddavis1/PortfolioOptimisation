@@ -1,0 +1,399 @@
+---
+title: "Portfolio Optimisation"
+subtitle: "Ed Davis, Conor Newton, Conor Crilly"
+output: 
+  pdf_document:
+  latex_engine: pdflatex
+mainfont: mathpazo
+sansfont: mathpazo
+mathfont: mathpazo
+monofont: mathpazo
+urlcolor: blue
+header-includes:
+  - \usepackage{titling}
+  - \usepackage{mathpazo}
+  - \usepackage{fancyhdr}
+  - \usepackage{bm}
+  - \usepackage{mathtools}
+  - \usepackage{amsmath}
+  - \usepackage{amsthm, amsmath, amssymb} 
+  - \usepackage[square, numbers]{natbib}
+  - \bibliographystyle{unsrtnat}
+  - \DeclareMathOperator*{\argmax}{arg\!\max}
+  - \DeclareMathOperator*{\argmin}{arg\!\min}
+  - \pagestyle{fancy}
+  - \fancyhead[R]{\textit{\thetitle \,\, \thepage}}
+  - \cfoot{}
+  - \fancyhead[LO,RE]{}
+  - \renewcommand{\headrulewidth}{0pt}
+  - \renewcommand{\footrulewidth}{0pt}
+classoption:
+  - twocolumn
+---
+
+\newpage
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Abstract 
+In this project, we present two models, mean variance and mean semi-variance, which optimise the return of investment in stock market assets for a given level of market risk. We find that these models optimise well on historical stock data compared to an equally weighted portfolio. However, we find that when trained on six months of historical data, the models under-perform on the next month.  
+
+\textbf{KEY WORDS}: Modern Portfolio Theory, Mean Semi-Variance, Quadratic Programming, S&P 500, Covariance Matrix, Condition Number.
+
+# Introduction
+Portfolio Optimisation involves finding the most optimal weightings for a portfolio of assets which maximise the return, given a specified level of risk. Stock market assets are exposed to varying levels of market risk. Thus, the potential returns are subject to different degrees of risk, with larger risk increasing the potential of yielding larger returns. It is clear that too great a degree of risk in an investment could cause significant losses to an investor. In this project, we consider optimizing a portfolio of assets selected from the S&P 500; a stock market index which includes 500 large companies in the United States, covering a significant portion of the equity market in the country. First, we invoke methods from the celebrated Modern Portfolio Optimisation theory \cite{MPT}, concluding that this simple technique can be useful for finding optimal portfolio weightings. We then consider adaptions of MPT, including the use of a mean semi-variance measure of portfolio risk, and the link to the quadratic programming framework. Finally, we include results from the numerical implementation of these techniques in `R`, before concluding by citing some further avenues for exploration.
+
+# Theory
+
+### Asset Return
+
+In this project, our portfolio consists of a selection of assets from the S&P 500. In this section, we shall outline the optimisation problem and define the notation to be used. We define the holding for a stock, $h$, to be the initial investment in buying $q$ shares at some price $p$; $h=qp$. After some time, the investor can choose to sell $q$ shares at some new price, $p^+$, which produces a profit of $q(p^+ - p)$. Using this, we can define the return on the investment to be 
+
+$$
+  \mathbf{r} = \frac{\text{profit}}{\text{investment}} = \frac{p^+ - p}{p},
+$$
+where $\mathbf{r}$ is a time-series vector of asset returns. This is the quantity that we would like to maximise for a given level of risk. Intuitively, the risk on the return of an asset can be represented by the standard deviation of $r$, with a larger standard deviation associated with a more unpredictable stock. 
+
+To simplify the optimisation problem, we will assume that the investor will invest in each of the assets selected for the portfolio at one time and then sell all shares for each asset at another time; we shall work to maximise the return made in this period. 
+
+### Asset Weighting
+
+The return of a portfolio can be optimised through the use of a weights vector, $\mathbf{w}$, which assigns a weight to each asset in the portfolio. This means that assets which are expected to have a larger return can be more heavily weighted, leading to a larger overall return. Therefore, our problem is simplified to finding the most appropriate weights vector to optimise the portfolio return for a given risk. 
+
+### Shorting
+
+Shorting is the process by which an investor will borrow shares and immediately sell them with the intention of then buying the shares at a later price and making a profit. While this is a risky technique, leaving no limit to how much an investor could lose if the share prices rise, it can increase the flexibility of the portfolio as it allows for negative weightings and therefore offers more solutions with larger returns. Due to this, we have included shorting in this project. However, it should be noted that the average investor should not consider shorting, only established investment companies.
+
+## Modern Portfolio Theory
+
+### Asset Selection 
+
+A range of techniques exist for diversifying a portfolio, one of which involves choosing stocks from varied sectors such as energy, real estate and technology. In addition, selecting assets from both developed and emerging markets can increase diversification, as well as selecting a range of bonds and gilts. For this study, instead of choosing assets from different asset classes with the aim of increasing diversity, we assume the investor has already decided which assets to invest in and implement techniques from Modern Portfolio Theory. 
+
+Modern Portfolio Theory (MPT) \cite{MPT} is an investment framework introduced by economist Harry Markowitz in 1952 and is the framework which we will adhere to during the following section. Markowitz proposed that the risk of a portfolio can be managed by allocating appropriate proportions of the total investment sum to each asset in the portfolio. 
+
+### Global Minimum Variance Portfolio 
+
+Suppose the investor has chosen three risky assets, in this case stocks, to invest in, say Apple, Microsoft and Starbucks, but wants to know how best to split their investment between the three stocks, ignoring the idea that an investor has specified a target return. 
+
+First, we suppose the investor is highly risk averse, and consider finding the portfolio weighting with minimum return variance. This portfolio weighting can be obtained by solving the following constrained optimisation problem 
+
+\begin{equation}
+\begin{aligned}
+  &\min_{\bm{w}} \bm{w}^{T}\Sigma\bm{w}, \\ 
+  &\text{subject to} \,\,\, \bm{w}^{T}\bm{1} = 1,
+\end{aligned}
+\end{equation}
+where $\Sigma$ is the matrix of covariances of the daily returns of each stock, 
+$\bm{1}$ is a vector of ones, and $\bm{w}$ is a vector of weights. Computing the 
+corresponding Lagrangian, with Lagrange multiplier $\lambda$ yields a system of 
+linear equations which we express as
+
+\begin{equation}
+\label{MinVar}
+\begin{bmatrix} 2\Sigma & \bm{1} \\ \bm{1}^{T} & 0 \end{bmatrix} 
+\begin{bmatrix} \bm{w} \\ \lambda \end{bmatrix} = 
+\begin{bmatrix} \bm{0} \\ 1 \end{bmatrix}.
+\end{equation}
+
+Inverting the square matrix on the left-hand side, albeit naively so, of 
+\eqref{MinVar} provides us with an analytic solution. This naive approach can be 
+readily implemented in `R`. Continuing with the three risky asset example, taking 
+S&P 500 data from 1 January 2018 to 1 July 2020, we can find that the global 
+minimum variance portfolio has corresponding weight vector\footnote{Rounded to three decimal places.}
+\begin{equation}
+  \bm{w}_{min} = \begin{bmatrix} 0.261 \\ 0.293 \\ 0.445 \end{bmatrix}.
+\end{equation}
+
+This portfolio weighting is referred to as the global minimum variance portfolio and will be useful for constructing the efficient frontier of portfolios. 
+
+## Specifying Desired Return - Efficient Portfolios
+
+Equation \eqref{MinVar} can be adapted to account for a target return specified by the investor, simply by enforcing an additional constraint. It is worth noting that one possible formulation involves maximizing the expected return of the portfolio for a given level of risk, whilst the dual problem involves minimizing the risk for a given level of return. In practice, the dual problem is more often solved as investors are more easily able to specify their desired return than quantify their level of risk aversion.
+
+Efficient portfolios arise as a result of the assumption that investors want to optimize the balance between risk and return. That is, 
+once an investor has specified their desired level of return, an efficient portfolio is defined as one which minimizes the expected risk for this given return value. The investment opportunity set is the set of all possible risk return pairs for all portfolios with weights summing to one. Efficient portfolios lie on the boundary of the investment opportunity set, called the efficient frontier. In order to fully characterize the efficient frontier, it suffices to find two efficient portfolios, as any portfolio on the efficient frontier can be expressed as a convex combination of two other efficient portfolios. 
+
+To characterize the efficient frontier, we can therefore find two efficient portfolios with 
+the same return as two assets in our portfolio, say Apple and Microsoft. The 
+corresponding constrained optimisation problem is as follows
+
+\begin{equation}
+\label{WithReturn}
+\begin{aligned}
+  &\min_{\bm{w}} \bm{w}^{T}\Sigma\bm{w}, \\ 
+  &\text{subject to} \,\,\, &&\bm{w}^{T}\bm{1} = 1 \,\,\, \text{and} \,\,\, \bm{w}^{T}\bm{\mu} = \mu_{d},
+\end{aligned}
+\end{equation}
+where $\mu_{d}$ is the desired return of the investor. As before, we can 
+calculate the corresponding Lagrangian, now with Lagrange multipliers 
+$\lambda_{1}$ and $\lambda_{2}$, which yields the following set of equations 
+
+\begin{equation}
+\label{WithReturnSol}
+\begin{bmatrix} 2\Sigma & \bm{\mu} & \bm{1} \\ \bm{\mu}^{T} & 0 & 0 \\ \bm{1}^{T} & 0 & 0 \end{bmatrix} 
+\begin{bmatrix} \bm{w} \\ \lambda_{1} \\ \lambda_{2} \end{bmatrix} = 
+\begin{bmatrix} \bm{0} \\ \bm{\mu}_{d}\\ 1 \end{bmatrix}.
+\end{equation}
+
+Once again, this can be solved naively by inverting the square matrix on the 
+left-hand side of \eqref{WithReturnSol}.
+
+Efficient portfolios with return equal to each of the individual assets can 
+then be calculated, with the risk spread across three assets as opposed to one. 
+The weightings corresponding to portfolios with expected 
+return\footnote{To three significant figures} equal to Apple $(\mu = 0.00148)$ 
+and Microsoft $(\mu = 0.00164)$ are given by
+
+\begin{equation}
+\begin{aligned}
+  \bm{w}_{Apple} &= \begin{bmatrix} 0.269 \\ 0.609  \\ 0.124 \end{bmatrix}, \\
+  \bm{w}_{Microsoft} &= \begin{bmatrix} 0.272 \\ 0.774 \\ -0.046 \end{bmatrix}.
+\end{aligned}
+\end{equation}
+
+
+Finally, the efficient frontier can be calculated and plotted by taking convex 
+combinations of the two. That is, suppose we use the two frontier portfolios 
+calculated above, with corresponding weights $\bm{w}_{Apple}$ and 
+$\bm{w}_{Microsoft}$. The weights for the new efficient portfolio are given by 
+
+\begin{equation}
+\label{NewWeights}
+  \bm{w}_{New} = \alpha \bm{w}_{Apple} + (1-\alpha) \bm{w}_{Microsoft},
+\end{equation}
+where $\alpha$ is an arbitrary constant. The corresponding expected return and 
+risk are given by
+
+\begin{equation}
+\begin{aligned}
+  \mu_{New} &= \bm{w}_{New}^{T}\bm{\mu}, \\
+  \sigma^{2}_{New} &= \bm{w}_{New}^{T}\Sigma\bm{w}_{New},  
+\end{aligned}
+\end{equation}
+where $\Sigma$ is the original covariance matrix of the daily returns for each 
+asset, and $\bm{\mu}$ is the vector of average returns for each asset. We plot 
+the efficient frontier for 170 evenly spaced values of $\alpha \in [-10,7]$ 
+below, in addition to the risk return values for each of the three individual 
+assets. Note that the $x$-axis risk is the standard deviation of the risk as 
+opposed to the variance.
+
+\begin{figure}
+\centering
+\includegraphics{MarkowitzBullet.png}
+\caption{A plot of the `Markowitz Bullet', generated by taking convex combinations of two efficient frontier portfolios with the same return as Apple and Microsoft.}
+\end{figure}
+
+\textbf{Remark:} Each of the above methods rely on inversion of the covariance matrix $\Sigma$ 
+and, when implemented numerically in `R`, using the `solve()` function. This is
+particularly dangerous when the covariance matrix is poorly conditioned; this arises 
+frequently when using a large number of correlated assets. In order 
+to avoid this, and enhance the scalability of the previous methods, a number of 
+alternative approaches using inbuilt quadratic optimisation routines will now be discussed.
+ 
+## Quadratic Programming
+
+A quadratic programming problem involves finding the minimum of a quadratic objective function
+\begin{equation*}
+    \min_x \frac{1}{2}x^T Q x + c^T x
+\end{equation*}
+subject to some linear constraints
+\begin{align*}
+    A x = a\\
+    B x \ge b
+\end{align*}
+In the case that $Q$ is positive semidefinite, the objective function is convex and has a unique minimum value. These quadratic programs can be solved in polynomial time\cite{QUAD} and in our case we make use of the package `quadprog` that uses the interior-point-convex algorithm.
+
+<!-- In the case that $Q$ is symmetric and positive definite, the quadratic program is equivalent to the constrained least squares problem -->
+<!-- \begin{equation*} -->
+<!--     \min_x \left\lVert R x - d \right\lVert -->
+<!-- \end{equation*} -->
+<!-- subject to --> 
+<!-- \begin{align*} -->
+<!--     A x = a\\ -->
+<!--     B x \ge b -->
+<!-- \end{align*} -->
+<!-- where $Q = R^T R$ and $c = -R^T d$. -->
+
+
+## Mean-Variance Model
+
+We have seen that the mean variance optimisation problem introduced by Markowitz has an analytical solution if we allow shorting. However, this solution requires us to invert a matrix that has correlation in its columns and rows which will often be computationally singular.
+
+An easy way of avoiding these complications is by taking an optimisation approach which does not require us to invert the matrix. Additionally, it allows us constrain the weighting of each asset to prevent shorting, this is often a reasonable assumption in portfolio optimisation. The mean variance quadratic optimisation problem can be stated as follows
+\begin{align*}
+    \textbf{minimise:} \quad &\bm{w}^T \Sigma \bm{w}\\
+    \textbf{subject to:} \quad &\bm{\mu}^T \bm{w} = r\\
+    & \sum_{i=1}^n w_i = 1\\
+    \text{(If we don't want shorting then) } & w_i \ge 0 \text{ for all } i
+\end{align*}
+where $\Sigma$ is the covariance matrix of the percentage returns of stocks, $\bm\mu$ is the expected daily return for each asset, $r$ is the desired daily return and $\bm{w}$ are the relative weightings for each asset in the optimised portfolio.
+
+Since the covariance matrix $\Sigma$ is positive semi-definite, the objective function of the above optimisation will be convex and this quadratic program can be solved efficiently. This is implemented in our R package
+
+A problem with this model is that the variance is not a measure of risk but a measure of volatility. This is a weakness if we don't want to allow shorting.
+
+## Mean-Semivariance Model
+
+Semivariance is a measure of risk similar to variance but only considers values that are below the mean. If we don't want to allow shorting, this is a better measure of risk than the covariance, since it wont punish an asset for having return values far above the mean. Given a matrix $R_{t, i}$ containing the daily percentage return of asset $i$ on day $t$ and the expected returns of each asset $\mu_i$, we can define semivariance as follows:
+\begin{equation*}
+    S(\bm{w}) = \frac{1}{T}\sum_{t=1}^T\left[\left(\sum_{i=1}^n (R_{t, i} - \mu_i) w_i, 0\right)^-  \right]^2
+\end{equation*}
+where we define
+\begin{equation*}
+    x^- = \begin{cases}
+        -x & \text{if } x \le 0\\
+        0 & \text{otherwise}
+    \end{cases}
+\end{equation*}
+Similar to the mean-variance model, we aim to minimise the semivariance for a given desired return. This problem can be stated as follows:
+
+\begin{align*}
+    \textbf{minimise:} \quad &S(\bm{w})\\
+    \textbf{subject to:} \quad &\bm{\mu}^T \bm{w} = r\\
+    & \sum_{i=1}^n w_i = 1\\
+    & w_i \ge 0 \text{ for all } i
+\end{align*}
+
+where $\bm{\mu}$ is the expected daily return for each asset, $r$ is the desired daily return and $\bm{w}$ are the relative weightings for each asset in the optimised portfolio. As shown by Markowitz et al \cite{MV}, we can now transform this problem into a quadratic program which can easily be solved numerically. Let
+\begin{equation*}
+    y_t = \frac{1}{\sqrt{T}}\sum_{i=1}^n(R_{t,i} - \mu_i)w_i
+\end{equation*}
+Then we get the equivalent problem
+\begin{align*}
+    \textbf{minimise:} \quad & \sum_{t=1}^T (y_t^-) ^ 2\\
+    \textbf{subject to:} \quad &\bm{\mu}^T \bm{w} = r\\
+    & \sum_{i=1}^n w_i = 1\\
+    & w_i \ge 0 \text{ for all } i
+\end{align*}
+Then finally setting $z_t = (y_t)^-$ we get the quadratic program:
+\begin{align*}
+    \textbf{minimise:} \quad & \sum_{t=1}^T z_t\\
+    \textbf{subject to:} \quad &\bm{\mu}^T \bm{w} = r\\
+    & \sum_{i=1}^n w_i = 1\\
+    & B\bm{w} - \bm{y} + \bm{z} = 0\\
+    & y_t \ge 0, \\
+    & z_t \ge 0 \text{ for all } t\\
+    & w_i \ge 0 \text{ for all } i\\
+\end{align*}
+where $B_{i,j} = \frac{1}{\sqrt{T}} (R_{i, j} - \mu_j)$ is a $T \times n$  matrix.
+
+Since all of these constraints are linear, i.e. they can be written in matrix form, and the objective function is quadratic and convex this can be efficiently solved. This is done in our R package.
+
+# Results
+
+Using the SP500 data from the last 6 years we demonstrate the mean-variance and mean-semivariance model seen in the previous section to find optimal portfolios with an expected daily return of 0.07%, this amounts to an expected annual return of roughly 20%. Both of these portfolios do not involve shorting. We plot the value of the M-V and M-SV portfolios of over the 6 years in figure \ref{fig:5years} against the value of an equally weighted portfolio assuming an initial investment of $1000.
+
+\begin{figure}
+  \centering
+  \includegraphics{5years.png}
+  \caption{Portfolio performances over the last 5 years}
+  \label{fig:5years}
+\end{figure}
+
+Although not much about the portfolios can be inferred from figure \ref{fig:5years}, it demonstrates that both methods work as expected on historic data. Since both portfolios use different measures of risk, they are likely to choose different assets. We highlight the top 10 weighted assets for each portfolio in figure \ref{fig:5yearsmv} and \ref{fig:5yearsmsv}.
+
+## Performance on new data
+
+The portfolios we have constructed so far are optimal on historic data, but in practice we want a portfolios that will perform well into the future. Making the big assumption that historic returns will look similar to returns in the near future, a portfolio that is optimal on historic data should perform well on new data. We explore this hypothesis by constructing portfolios using the mean-variance and mean-semivariance models on 6 months of historic data that aim for a 20% yearly return and then testing their performance on the following month of data. The average monthly return of both methods over 36 consecutive testing and training periods starting on 01-01-2015 is given in the following table. We also give the results of the performance of an equally weighted portfolio.
+\begin{center}
+\begin{tabular}{ |c|c|c| } 
+ \hline
+ Equal & M-V & M-SV \\ 
+ \hline
+ 0.11 & 0.09 & 0.13 \\ 
+ \hline
+\end{tabular}
+\end{center}
+
+Although the mean-semivariance model slightly outperforms the equally weighted portfolio, it underperforms the 20% monthly return it was trained on. 
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.40\textwidth]{5yearsmv.png}
+  \caption{Top 10 weighted assets in the M-V portfolio.}
+  \label{fig:5yearsmv}
+\end{figure}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.40\textwidth]{5yearsmsv.png}
+  \caption{Top 10 weighted assets in the M-SV portfolio.}
+  \label{fig:5yearsmsv}
+\end{figure}
+
+<!-- \begin{figure} -->
+<!--   \centering -->
+<!--   \includegraphics{equal_weights_value_plot.png} -->
+<!--   \caption{Portfolio value with the assets equally weighted.} -->
+<!--   \label{fig:equal_weights} -->
+<!-- \end{figure} -->
+
+
+
+<!-- \begin{figure} -->
+<!--   \centering -->
+<!--   \includegraphics{least_squares_0.5_value_plot.png} -->
+<!--   \caption{Portfolio value with the assets optimised using .} -->
+<!--   \label{fig:equal_weights} -->
+<!-- \end{figure} -->
+
+\begin{figure}
+  \centering
+  \includegraphics{equal_weights_value.png}
+  \caption{Portfolio value with the assets equally weighted.}
+  \label{fig:equal_weights}
+\end{figure}
+
+\begin{figure}
+  \centering
+  \includegraphics{ls_value.png}
+  \caption{Portfolio value with the assets optimised using .}
+  \label{fig:equal_weights}
+\end{figure}
+
+# Conclusion
+In this report we investigated a number of different techniques for 
+optimisation of a portfolio consisting of assets from the S&P 500. First, we 
+discussed portfolio optimisation from the perspective of Modern Portfolio Theory,
+including closed form solutions for optimal weights, given a specific choice of 
+assets. Further, we discussed an adaption of this approach which accounts for 
+the level of return desired by an investor and its relationship to the dual 
+problem which maximizes return for a specified level of risk. We highlighted 
+that, although useful, these analytic solutions, and their corresponding 
+numerical implementation may be unstable if implemented naively due to 
+ill-conditioning of the covariance matrix $\Sigma$.
+
+We then discussed two quadratic opimisation routines involving mean-variance 
+and mean semi-variance, concluding that the mean-semivariance model was the 
+highest performing model, but still underperforms the 20% monthly return on 
+which it was trained.
+
+Potential adaptions of the methods implemented in this investigation include 
+accounting for external cash which may enter the portfolio either through 
+dividends paid to the investor for holding specific assets, or simply out of 
+the investor's own pocket \cite{Boyd}. In addition, since the methods implemented are based 
+crucially on the assumption that the \textit{future looks something like the 
+past}, it would be interesting to investigate the incorporation of some measure 
+of uncertainty of this assumption into the model, thus associating an 
+uncertainty with the predicted weights.
+
+\newpage
+
+\bibliography{bibliography}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
