@@ -60,11 +60,11 @@ To simplify the optimisation problem, we will assume that the investor will inve
 
 ### Asset Weighting
 
-The return of a portfolio can be optimised through the use of a weights vector, $\mathbf{w}$, which assigns a weight to each asset in the portfolio. This means that assets which are expected to have a larger return can be more heavily weighted, leading to a larger overall return. Therefore, our problem is simplified to finding the most appropriate weights vector to optimise the portfolio return for a given risk. 
+The return of a portfolio can be optimised through the use of a weights vector, which assigns a weight to each asset in the portfolio. This means that assets which are expected to have a larger return can be more heavily weighted, leading to a larger overall return. Therefore, our problem is simplified to finding the most appropriate weights vector to optimise the portfolio return for a given risk. 
 
 ### Shorting
 
-Shorting is the process by which an investor will borrow shares and immediately sell them with the intention of then buying the shares at a later price and making a profit. While this is a risky technique, leaving no limit to how much an investor could lose if the share prices rise, it can increase the flexibility of the portfolio as it allows for negative weightings and therefore offers more solutions with larger returns. Due to this, we have included shorting in this project. However, it should be noted that the average investor should not consider shorting, only established investment companies.
+Shorting is the process by which an investor will borrow shares and immediately sell them with the intention of then buying the shares at a later price and making a profit. While this is a risky technique, leaving no limit to how much an investor could lose if the share prices rise, it can increase the flexibility of the portfolio as it allows for negative weightings and therefore offers more solutions with larger returns.  However, it should be noted that the average investor should not consider shorting, only established investment companies.
 
 ## Modern Portfolio Theory
 
@@ -284,6 +284,27 @@ Since all of these constraints are linear, i.e. they can be written in matrix fo
 
 # Results
 
+## Application of Morder Portfolio Theory
+
+For an example portfolio containing three risky assets: Apple, Microsoft and Starbucks, the value of the portfolio will simply the average of the three assets in the case of equal weightings, as shown in Figure \ref{fig:equal_weights}. However, through the application of modern portfolio theory, we can see that the overall portfolio value after two years is 2.6 times larger than in the equal weighting case, as shown in Figure \ref{fig:ls_value}. While this method is clearly a successful one for this case, it does involve shorting, which is not always an available strategy. 
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.5\textwidth]{equal_weights_value.png}
+  \caption{An example portfolio value with the assets equally weighted over a two year period. The portfolio contains three risky assets.}
+  \label{fig:equal_weights}
+\end{figure}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.5\textwidth]{ls_value.png}
+  \caption{An example portfolio value with the assets optimised using modern portfolio theory with an annual desired return of 50\% over a two year period. The portfolio contains three risky assets.}
+  \label{fig:ls_value}
+\end{figure}
+
+
+## Application of Quadratic Programming Methods
+
 Using the SP500 data from the last 6 years we demonstrate the mean-variance and mean-semivariance model seen in the previous section to find optimal portfolios with an expected daily return of 0.07%, this amounts to an expected annual return of roughly 20%. Both of these portfolios do not involve shorting. We plot the value of the M-V and M-SV portfolios of over the 6 years in figure \ref{fig:5years} against the value of an equally weighted portfolio assuming an initial investment of $1000.
 
 \begin{figure}
@@ -324,35 +345,7 @@ Although the mean-semivariance model slightly outperforms the equally weighted p
   \label{fig:5yearsmsv}
 \end{figure}
 
-<!-- \begin{figure} -->
-<!--   \centering -->
-<!--   \includegraphics{equal_weights_value_plot.png} -->
-<!--   \caption{Portfolio value with the assets equally weighted.} -->
-<!--   \label{fig:equal_weights} -->
-<!-- \end{figure} -->
 
-
-
-<!-- \begin{figure} -->
-<!--   \centering -->
-<!--   \includegraphics{least_squares_0.5_value_plot.png} -->
-<!--   \caption{Portfolio value with the assets optimised using .} -->
-<!--   \label{fig:equal_weights} -->
-<!-- \end{figure} -->
-
-\begin{figure}
-  \centering
-  \includegraphics{equal_weights_value.png}
-  \caption{Portfolio value with the assets equally weighted.}
-  \label{fig:equal_weights}
-\end{figure}
-
-\begin{figure}
-  \centering
-  \includegraphics{ls_value.png}
-  \caption{Portfolio value with the assets optimised using .}
-  \label{fig:equal_weights}
-\end{figure}
 
 # Conclusion
 In this report we investigated a number of different techniques for 
