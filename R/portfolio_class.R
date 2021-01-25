@@ -53,7 +53,7 @@ portfolio$methods(
     if (is.null(weights)) const_weight = TRUE
     else {
       const_weight = FALSE
-      if (sum(weights) != 1) stop("Error: Weights do not add to 1")
+      if (abs(sum(weights) - 1) >= 1e-10) stop("Error: Weights do not add to 1")
       if (length(weights) != n) stop("Error: Weights vector and assets vector are different lengths")
     }
 
