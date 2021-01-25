@@ -2,11 +2,20 @@
 title: "Group Project Lab Book"
 subtitle: "Portfilio Optimisation"
 output: pdf_document
+author:
+  Edward Davis,
+  Conor Crilly,
+  Conor Newton
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+\begin{center}
+  https://github.com/edwarddavis1/PortfolioOptimisation
+\end{center}
+
 
 # Introduction
 
@@ -484,14 +493,14 @@ for (period in 1:2) {
                          to = to)
 
     # Train portfolios
-    w1 <- pft1$mean_variance_optimize(0.00001, short = FALSE)
-    w2 <- pft2$mean_semivariance_optimize(0.00001, short = FALSE)
+    w1 <- pft1$mean_variance_optimize(0.0001, short = FALSE)
+    w2 <- pft2$mean_semivariance_optimize(0.0001, short = FALSE)
 
     # Make sure weights sum to one, sometimes there is a little error due to
     # optimisation approach
     w1 <- w1/sum(w1)
     w2 <- w2/sum(w2)
-    
+  
     # Make new portfolios just for testing purposes on the 
     pft1_test = portfolio$new(c("AAPL", "SBUX", "T", "MSFT", "A", "MMM"), 
                          from = to, 
